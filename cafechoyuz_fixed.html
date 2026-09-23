@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Cafechoyuz — Boshqaruv tizimi</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0906;
+    --bg-2: #100d09;
+    --surface: #17130e;
+    --surface-2: #1f1911;
+    --surface-3: #241d13;
+    --border: #35291a;
+    --gold: #c9a227;
+    --gold-bright: #e8c15a;
+    --gold-dim: #8a7127;
+    --text: #f3ead9;
+    --text-dim: #a99d84;
+    --text-faint: #786c56;
+    --green: #3fae6a;
+    --green-bg: rgba(63,174,106,0.14);
+    --red: #d9534f;
+    --red-bg: rgba(217,83,79,0.14);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 10px 30px rgba(0,0,0,0.45);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: radial-gradient(ellipse at top, #14100a 0%, var(--bg) 55%);
+    color: var(--text);
+    font-family: 'Manrope', sans-serif;
+    min-height: 100vh;
+    overscroll-behavior-y: none;
+  }
+  .app{
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background: var(--bg);
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    box-shadow: 0 0 60px rgba(0,0,0,0.6);
+  }
+  /* HEADER */
+  .topbar{
+    position: sticky; top:0; z-index:20;
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 18px 14px;
+    background: linear-gradient(180deg, rgba(10,9,6,0.98), rgba(10,9,6,0.9));
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(6px);
+  }
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand-mark{
+    width:38px;height:38px;border-radius:10px;
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold-dim));
+    display:flex;align-items:center;justify-content:center;
+    font-size:19px; box-shadow: 0 4px 14px rgba(201,162,39,0.35);
+  }
+  .brand-text .title{
+    font-family:'Cormorant Garamond', serif; font-weight:700; font-size:22px; letter-spacing:0.3px;
+    color: var(--gold-bright); line-height:1;
+  }
+  .brand-text .sub{font-size:10.5px; color:var(--text-faint); letter-spacing:0.5px; margin-top:2px;}
+  .icon-btn{
+    width:40px;height:40px;border-radius:12px; border:1px solid var(--border);
+    background: var(--surface); color: var(--gold-bright);
+    display:flex; align-items:center;justify-content:center; font-size:18px; cursor:pointer;
+  }
+  .icon-btn:active{transform: scale(0.94);}
+
+  /* MAIN */
+  .view{ display:none; padding: 18px 16px 100px; flex:1; }
+  .view.active{ display:block; animation: fadein 0.18s ease; }
+  @keyframes fadein{ from{opacity:0; transform: translateY(6px);} to{opacity:1; transform:none;} }
+
+  h2.view-title{
+    font-family:'Cormorant Garamond', serif; font-size:26px; color: var(--text); margin: 4px 0 4px;
+    font-weight:600;
+  }
+  p.view-sub{ color: var(--text-dim); font-size:13px; margin: 0 0 18px; }
+
+  /* TABLES GRID */
+  .tables-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+  .table-card{
+    background: var(--surface); border:1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 14px; position:relative; cursor:pointer; min-height:112px;
+    display:flex; flex-direction:column; justify-content:space-between;
+    transition: border-color .15s;
+  }
+  .table-card:active{ transform: scale(0.97); }
+  .table-card.faol{ border-color: rgba(217,83,79,0.4); background: linear-gradient(160deg, var(--surface), rgba(217,83,79,0.06)); }
+  .table-card.bosh{ border-color: rgba(63,174,106,0.3); }
+  .table-card .tname{ font-size:17px; font-weight:700; }
+  .status-dot{ width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:6px; }
+  .status-dot.green{ background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .status-dot.red{ background: var(--red); box-shadow: 0 0 8px var(--red); }
+  .table-status{ display:flex; align-items:center; font-size:11.5px; color: var(--text-dim); }
+  .table-total{ font-family:'Cormorant Garamond', serif; font-weight:700; font-size:19px; color: var(--gold-bright); }
+  .table-empty-label{ font-size:12px; color: var(--text-faint); }
+
+  /* BUTTONS */
+  .btn{
+    border:none; border-radius: var(--radius-sm); padding: 14px 18px; font-size:15px; font-weight:700;
+    cursor:pointer; text-align:center; font-family:'Manrope',sans-serif; letter-spacing:0.2px;
+  }
+  .btn-gold{ background: linear-gradient(135deg, var(--gold-bright), var(--gold)); color:#1a1305; box-shadow: 0 6px 18px rgba(201,162,39,0.28);}
+  .btn-gold:active{ transform: scale(0.98); }
+  .btn-outline{ background: transparent; border:1px solid var(--border); color: var(--text); }
+  .btn-ghost{ background: var(--surface-2); color: var(--text-dim); border:1px solid var(--border); }
+  .btn-red{ background: var(--red); color:#fff; }
+  .btn-block{ width:100%; display:block; }
+  .btn:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  /* BOTTOM NAV */
+  .bottomnav{
+    position: fixed; bottom:0; left:50%; transform: translateX(-50%);
+    width:100%; max-width:480px; background: rgba(16,13,9,0.97); border-top:1px solid var(--border);
+    display:flex; z-index:30; backdrop-filter: blur(8px);
+    padding-bottom: env(safe-area-inset-bottom, 6px);
+  }
+  .nav-item{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:3px; padding: 10px 2px 8px; color: var(--text-faint); font-size:10.5px; cursor:pointer; border:none; background:none;
+    font-family:'Manrope',sans-serif;
+  }
+  .nav-item .ic{ font-size:20px; filter: grayscale(1) opacity(0.6); }
+  .nav-item.active{ color: var(--gold-bright); }
+  .nav-item.active .ic{ filter:none; }
+
+  /* CARDS / LISTS */
+  .card{ background: var(--surface); border:1px solid var(--border); border-radius: var(--radius); padding:14px 16px; margin-bottom:12px; }
+  .row{ display:flex; align-items:center; justify-content:space-between; }
+  .cat-tabs{ display:flex; gap:8px; overflow-x:auto; padding-bottom:10px; margin-bottom:6px; }
+  .cat-tab{
+    white-space:nowrap; padding:9px 15px; border-radius:20px; border:1px solid var(--border);
+    background: var(--surface); color: var(--text-dim); font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .cat-tab.active{ background: var(--gold); color:#1a1305; border-color: var(--gold); }
+
+  .product-item{
+    display:flex; align-items:center; gap:12px; background: var(--surface); border:1px solid var(--border);
+    border-radius: var(--radius-sm); padding:11px 12px; margin-bottom:10px;
+  }
+  .product-emoji{ width:44px;height:44px;border-radius:10px; background: var(--surface-3); display:flex;align-items:center;justify-content:center; font-size:22px; flex-shrink:0; }
+  .product-info{ flex:1; min-width:0; }
+  .product-info .pname{ font-size:14.5px; font-weight:700; }
+  .product-info .pprice{ font-size:12.5px; color: var(--gold-bright); margin-top:2px; }
+  .qty-control{ display:flex; align-items:center; gap:0; background: var(--surface-2); border-radius:20px; border:1px solid var(--border); }
+  .qty-btn{ width:32px;height:32px; border:none; background:none; color: var(--gold-bright); font-size:17px; font-weight:800; cursor:pointer; }
+  .qty-val{ min-width:22px; text-align:center; font-weight:700; font-size:14px; }
+  .unavailable{ opacity:0.4; }
+  .tag-unavailable{ font-size:10px; color: var(--red); border:1px solid var(--red); padding:1px 6px; border-radius:6px; margin-left:6px; }
+
+  /* CART BAR */
+  .cart-bar{
+    position:fixed; bottom: 62px; left:50%; transform:translateX(-50%); width:100%; max-width:480px;
+    padding: 10px 14px; z-index:25;
+  }
+  .cart-inner{
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border-radius: var(--radius);
+    padding:13px 16px; display:flex; align-items:center; justify-content:space-between; box-shadow: var(--shadow); color:#1a1305;
+  }
+  .cart-inner .ctxt{ font-size:12px; font-weight:600; opacity:0.85; }
+  .cart-inner .camt{ font-family:'Cormorant Garamond', serif; font-size:19px; font-weight:800; }
+  .cart-inner button{ background:#1a1305; color: var(--gold-bright); border:none; border-radius:10px; padding:10px 16px; font-weight:800; font-size:13.5px; }
+
+  /* OVERLAY / MODAL */
+  .overlay{
+    position:fixed; inset:0; background: rgba(0,0,0,0.6); z-index:50; display:none;
+    align-items:flex-end; justify-content:center;
+  }
+  .overlay.show{ display:flex; }
+  .sheet{
+    background: var(--bg-2); width:100%; max-width:480px; border-radius: 20px 20px 0 0;
+    max-height: 92vh; overflow-y:auto; padding: 16px 16px calc(20px + env(safe-area-inset-bottom,0px));
+    border-top:1px solid var(--border); animation: slideup .2s ease;
+  }
+  @keyframes slideup{ from{ transform: translateY(30px); opacity:0.4; } to{ transform:none; opacity:1; } }
+  .sheet-handle{ width:40px;height:4px; background: var(--border); border-radius:4px; margin: 0 auto 14px; }
+  .sheet-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .sheet-header h3{ font-family:'Cormorant Garamond', serif; font-size:21px; margin:0; color: var(--gold-bright); }
+  .close-x{ font-size:20px; color: var(--text-dim); background:none; border:none; cursor:pointer; padding:4px 8px; }
+
+  .modal-center{ align-items:center; }
+  .modal-box{
+    background: var(--surface); border:1px solid var(--border); border-radius: var(--radius);
+    width: 88%; max-width:360px; padding: 22px 20px; text-align:center;
+  }
+  .modal-box h3{ font-family:'Cormorant Garamond', serif; color:var(--gold-bright); font-size:20px; margin: 4px 0 8px;}
+  .modal-box p{ color: var(--text-dim); font-size:13.5px; margin-bottom:18px; }
+  .modal-actions{ display:flex; gap:10px; }
+
+  .receipt{ background: var(--surface-2); border:1px dashed var(--border); border-radius: var(--radius-sm); padding:16px; }
+  .receipt-head{ text-align:center; margin-bottom:12px; }
+  .receipt-head .rlogo{ font-family:'Cormorant Garamond', serif; color: var(--gold-bright); font-size:20px; font-weight:700; }
+  .receipt-head .rmeta{ font-size:11.5px; color: var(--text-faint); margin-top:2px; }
+  .receipt-line{ display:flex; justify-content:space-between; font-size:13px; padding:6px 0; border-bottom:1px dotted var(--border); }
+  .receipt-line .rname{ color: var(--text); }
+  .receipt-line .rsub{ color: var(--text-faint); font-size:11px; }
+  .receipt-total{ display:flex; justify-content:space-between; padding-top:12px; margin-top:6px; border-top:1px solid var(--border); font-size:16px; font-weight:800; color: var(--gold-bright); }
+
+  input, select{
+    width:100%; background: var(--surface-2); border:1px solid var(--border); color: var(--text);
+    border-radius: var(--radius-sm); padding: 12px 13px; font-size:14px; font-family:'Manrope',sans-serif; margin-bottom:12px;
+  }
+  label.flabel{ font-size:12px; color: var(--text-dim); margin-bottom:6px; display:block; }
+  .emoji-pick{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+  .emoji-opt{ width:38px;height:38px;border-radius:10px;background:var(--surface-2); border:1px solid var(--border); font-size:18px; display:flex;align-items:center;justify-content:center; cursor:pointer;}
+  .emoji-opt.sel{ border-color: var(--gold); background: var(--surface-3); }
+  .toggle-row{ display:flex; align-items:center; justify-content:space-between; padding:10px 0; }
+  .switch{ position:relative; width:44px; height:24px; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .slider{ position:absolute; cursor:pointer; inset:0; background: var(--surface-3); border-radius:24px; border:1px solid var(--border); transition:.2s;}
+  .slider:before{ content:""; position:absolute; height:18px; width:18px; left:2px; top:2px; background: var(--text-dim); border-radius:50%; transition:.2s;}
+  .switch input:checked + .slider{ background: var(--gold-dim); }
+  .switch input:checked + .slider:before{ transform: translateX(20px); background: var(--gold-bright); }
+
+  /* KASSA LIST */
+  .kassa-row{ display:flex; align-items:center; justify-content:space-between; padding:14px 4px; border-bottom:1px solid var(--border); cursor:pointer; }
+  .kassa-row:last-child{ border-bottom:none; }
+  .kassa-left{ display:flex; align-items:center; gap:10px; }
+  .kassa-name{ font-weight:700; font-size:14.5px; }
+  .kassa-amt{ font-weight:800; color: var(--gold-bright); font-size:14.5px; }
+  .kassa-amt.dim{ color: var(--text-faint); font-weight:600; font-size:13px; }
+
+  /* STATS */
+  .stat-tabs{ display:flex; gap:6px; margin-bottom:16px; overflow-x:auto; }
+  .stat-tab{ flex-shrink:0; padding:9px 14px; border-radius:20px; border:1px solid var(--border); background:var(--surface); color:var(--text-dim); font-size:12.5px; font-weight:700; cursor:pointer;}
+  .stat-tab.active{ background:var(--gold); color:#1a1305; border-color:var(--gold);}
+  .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+  .stat-card{ background: var(--surface); border:1px solid var(--border); border-radius: var(--radius-sm); padding:14px; }
+  .stat-card .slabel{ font-size:11px; color: var(--text-faint); margin-bottom:6px; }
+  .stat-card .sval{ font-family:'Cormorant Garamond', serif; font-size:21px; font-weight:800; color: var(--gold-bright); }
+  .section-title{ font-size:13px; font-weight:800; color: var(--text-dim); text-transform:none; margin: 18px 0 10px; letter-spacing:0.2px; }
+  .top-prod-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); }
+  .top-prod-row:last-child{ border:none; }
+  .bar-chart{ display:flex; align-items:flex-end; gap:8px; height:140px; padding:10px 4px 0; }
+  .bar-col{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:6px; }
+  .bar-fill{ width:100%; max-width:26px; background: linear-gradient(180deg, var(--gold-bright), var(--gold-dim)); border-radius:6px 6px 2px 2px; min-height:3px; }
+  .bar-label{ font-size:9.5px; color: var(--text-faint); }
+  .date-range-row{ display:flex; gap:8px; }
+  .date-range-row input{ margin-bottom:8px; }
+
+  .empty-state{ text-align:center; padding: 40px 20px; color: var(--text-faint); }
+  .empty-state .eicon{ font-size:38px; margin-bottom:10px; opacity:0.7; }
+
+  .fab-add{ position:fixed; bottom:80px; right:calc(50% - 240px + 18px); background: var(--gold); color:#1a1305; width:52px;height:52px; border-radius:50%; border:none; font-size:26px; box-shadow: var(--shadow); z-index:24; display:flex;align-items:center;justify-content:center; cursor:pointer;}
+  @media (max-width:480px){ .fab-add{ right:18px; } }
+
+  .toast{ position:fixed; top:14px; left:50%; transform:translateX(-50%); background: var(--surface-3); border:1px solid var(--gold-dim); color: var(--text); padding:11px 18px; border-radius:30px; font-size:13px; z-index:100; opacity:0; transition:opacity .25s, top .25s; pointer-events:none; box-shadow: var(--shadow); }
+  .toast.show{ opacity:1; top:24px; }
+
+  ::-webkit-scrollbar{ width:0; height:0; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">☕</div>
+      <div class="brand-text">
+        <div class="title">Cafechoyuz</div>
+        <div class="sub">BOSHQARUV TIZIMI</div>
+      </div>
+    </div>
+    <button class="icon-btn" onclick="UI.openSettings()">⚙️</button>
+  </div>
+
+  <!-- STOLLAR / BOSH SAHIFA -->
+  <div class="view active" id="view-tables">
+    <h2 class="view-title">Stollar</h2>
+    <p class="view-sub">Zakaz berish uchun stolni tanlang</p>
+    <div class="tables-grid" id="tablesGrid"></div>
+  </div>
+
+  <!-- KASSA -->
+  <div class="view" id="view-kassa">
+    <h2 class="view-title">Kassa</h2>
+    <p class="view-sub">Barcha stollar bo'yicha hisob</p>
+    <div class="card" id="kassaList"></div>
+  </div>
+
+  <!-- STATISTIKA -->
+  <div class="view" id="view-stats">
+    <h2 class="view-title">Statistika</h2>
+    <div class="stat-tabs" id="statTabs"></div>
+    <div id="dateRangeBox" style="display:none; margin-bottom:14px;">
+      <div class="date-range-row">
+        <input type="date" id="rangeFrom">
+        <input type="date" id="rangeTo">
+      </div>
+      <button class="btn btn-gold btn-block" onclick="Stats.applyRange()">Ko'rsatish</button>
+    </div>
+    <div class="stat-grid" id="statGrid"></div>
+    <div id="statChartWrap"></div>
+    <div class="section-title">Sotilgan mahsulotlar</div>
+    <div class="card" id="topProducts"></div>
+  </div>
+
+  <!-- TARIX -->
+  <div class="view" id="view-history">
+    <h2 class="view-title">Tarix</h2>
+    <p class="view-sub">Yopilgan hisoblar</p>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- MAHSULOTLAR -->
+  <div class="view" id="view-products">
+    <h2 class="view-title">Mahsulotlar</h2>
+    <p class="view-sub">Menyuni boshqarish</p>
+    <div id="productsAdminList"></div>
+    <button class="fab-add" onclick="Products.openForm()">+</button>
+  </div>
+
+  <div class="bottomnav">
+    <button class="nav-item active" data-view="tables" onclick="UI.switchView('tables')"><span class="ic">🪑</span>Stollar</button>
+    <button class="nav-item" data-view="kassa" onclick="UI.switchView('kassa')"><span class="ic">💵</span>Kassa</button>
+    <button class="nav-item" data-view="stats" onclick="UI.switchView('stats')"><span class="ic">📊</span>Statistika</button>
+    <button class="nav-item" data-view="history" onclick="UI.switchView('history')"><span class="ic">📜</span>Tarix</button>
+    <button class="nav-item" data-view="products" onclick="UI.switchView('products')"><span class="ic">🍽</span>Menyu</button>
+  </div>
+
+  <!-- ZAKAZ SHEET -->
+  <div class="overlay" id="overlayOrder">
+    <div class="sheet" style="max-height:96vh;">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <h3 id="orderSheetTitle">Stol</h3>
+        <button class="close-x" onclick="UI.closeOverlay('overlayOrder')">✕</button>
+      </div>
+      <div id="existingOrderBox"></div>
+      <div class="cat-tabs" id="catTabs"></div>
+      <div id="productList"></div>
+      <div style="height:70px;"></div>
+    </div>
+  </div>
+  <div class="cart-bar" id="cartBar" style="display:none;">
+    <div class="cart-inner">
+      <div>
+        <div class="ctxt" id="cartLabel">Jami</div>
+        <div class="camt" id="cartAmount">0 so'm</div>
+      </div>
+      <button onclick="Order.send()" id="cartSendBtn">ZAKAZNI YUBORISH</button>
+    </div>
+  </div>
+
+  <!-- RECEIPT / SHOT SHEET -->
+  <div class="overlay" id="overlayReceipt">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <h3 id="receiptTitle">Shot</h3>
+        <button class="close-x" onclick="UI.closeOverlay('overlayReceipt')">✕</button>
+      </div>
+      <div id="receiptBody"></div>
+      <div id="receiptActions" style="margin-top:16px; display:flex; flex-direction:column; gap:10px;"></div>
+    </div>
+  </div>
+
+  <!-- CONFIRM PAYMENT MODAL -->
+  <div class="overlay modal-center" id="overlayConfirm">
+    <div class="modal-box">
+      <h3>To'lovni tasdiqlash</h3>
+      <p id="confirmText">Pul olindi deb tasdiqlaysizmi?</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost btn-block" onclick="UI.closeOverlay('overlayConfirm')">Bekor qilish</button>
+        <button class="btn btn-gold btn-block" id="confirmYesBtn">Ha, pul olindi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRODUCT FORM SHEET -->
+  <div class="overlay" id="overlayProductForm">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <h3 id="pfTitle">Mahsulot qo'shish</h3>
+        <button class="close-x" onclick="UI.closeOverlay('overlayProductForm')">✕</button>
+      </div>
+      <label class="flabel">Nomi</label>
+      <input id="pfName" placeholder="Masalan: Osh">
+      <label class="flabel">Narxi (so'm)</label>
+      <input id="pfPrice" type="number" placeholder="35000">
+      <label class="flabel">Kategoriya</label>
+      <select id="pfCategory"></select>
+      <label class="flabel">Belgi (rasm o'rnida)</label>
+      <div class="emoji-pick" id="pfEmojiPick"></div>
+      <div class="toggle-row">
+        <span>Mavjud</span>
+        <label class="switch"><input type="checkbox" id="pfAvailable" checked><span class="slider"></span></label>
+      </div>
+      <button class="btn btn-gold btn-block" style="margin-top:10px;" onclick="Products.save()">Saqlash</button>
+      <button class="btn btn-ghost btn-block" style="margin-top:10px; display:none;" id="pfDeleteBtn" onclick="Products.remove()">O'chirish</button>
+    </div>
+  </div>
+
+  <!-- SETTINGS SHEET -->
+  <div class="overlay" id="overlaySettings">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <h3>Sozlamalar</h3>
+        <button class="close-x" onclick="UI.closeOverlay('overlaySettings')">✕</button>
+      </div>
+      <div class="card">
+        <div class="row"><span>Kafe nomi</span><b>Cafechoyuz</b></div>
+      </div>
+      <div class="card">
+        <div class="row"><span>Stollar soni</span><b>6</b></div>
+      </div>
+      <button class="btn btn-red btn-block" onclick="Settings.resetAll()">Barcha ma'lumotlarni tozalash</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ============ CONSTANTS ============ */
+const CATEGORIES = ["Taomlar","Ichimliklar","Choy","Salatlar","Boshqa mahsulotlar"];
+const EMOJI_CHOICES = ["🍚","🍜","🍢","🥟","🥗","🍞","🍗","🥤","🧃","💧","🍵","🍶","🧉","🍅","🥒","🍯","🍪","🧀"];
+const STORAGE_KEYS = { products:"cafechoyuz:products", tables:"cafechoyuz:tables", history:"cafechoyuz:history" };
+
+let state = { products: [], tables: [], history: [] };
+let ui = { orderTableId:null, cart:{}, currentCategory: CATEGORIES[0], statPeriod:"today", editingProductId:null };
+
+/* ============ UTIL ============ */
+function fmt(n){ n = Math.round(n||0); return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " so'm"; }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+function dateStr(d){ const dt=new Date(d); return dt.toLocaleDateString('uz-UZ',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function timeStr(d){ const dt=new Date(d); return dt.toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'}); }
+function isSameDay(a,b){ a=new Date(a); b=new Date(b); return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+function startOfWeek(d){ const dt=new Date(d); const day=(dt.getDay()+6)%7; dt.setHours(0,0,0,0); dt.setDate(dt.getDate()-day); return dt; }
+function startOfMonth(d){ const dt=new Date(d); return new Date(dt.getFullYear(), dt.getMonth(), 1); }
+function startOfYear(d){ const dt=new Date(d); return new Date(dt.getFullYear(),0,1); }
+
+/* ============ STORAGE ============ */
+async function loadAll(){
+  state.products = await loadKey(STORAGE_KEYS.products, seedProducts());
+  state.tables   = await loadKey(STORAGE_KEYS.tables, seedTables());
+  state.history  = await loadKey(STORAGE_KEYS.history, seedHistory());
+}
+async function loadKey(key, fallback){
+  try{
+    const raw = localStorage.getItem(key);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ console.warn("Saqlashni o'qishda xatolik", e); }
+  try{ localStorage.setItem(key, JSON.stringify(fallback)); }catch(e){}
+  return fallback;
+}
+async function persist(key, data){
+  try{
+    localStorage.setItem(key, JSON.stringify(data));
+  }catch(e){
+    console.error("Saqlashda xatolik", e);
+    toast("Saqlashda xatolik yuz berdi");
+  }
+}
+const saveProducts = ()=>persist(STORAGE_KEYS.products, state.products);
+const saveTables   = ()=>persist(STORAGE_KEYS.tables, state.tables);
+const saveHistory  = ()=>persist(STORAGE_KEYS.history, state.history);
+
+/* ============ SEED DATA ============ */
+function seedProducts(){
+  return [
+    {id:"p1",name:"Osh (Palov)",category:"Taomlar",price:35000,emoji:"🍚",available:true},
+    {id:"p2",name:"Lag'mon",category:"Taomlar",price:30000,emoji:"🍜",available:true},
+    {id:"p3",name:"Shashlik (qo'y)",category:"Taomlar",price:35000,emoji:"🍢",available:true},
+    {id:"p4",name:"Manti",category:"Taomlar",price:28000,emoji:"🥟",available:true},
+    {id:"p5",name:"Cola",category:"Ichimliklar",price:12000,emoji:"🥤",available:true},
+    {id:"p6",name:"Fanta",category:"Ichimliklar",price:12000,emoji:"🧃",available:true},
+    {id:"p7",name:"Suv (0.5L)",category:"Ichimliklar",price:5000,emoji:"💧",available:true},
+    {id:"p8",name:"Qora choy",category:"Choy",price:10000,emoji:"🍵",available:true},
+    {id:"p9",name:"Ko'k choy",category:"Choy",price:10000,emoji:"🍵",available:true},
+    {id:"p10",name:"Qaymoqli choy",category:"Choy",price:15000,emoji:"🍶",available:true},
+    {id:"p11",name:"Achichuk salat",category:"Salatlar",price:15000,emoji:"🥗",available:true},
+    {id:"p12",name:"Vinegret",category:"Salatlar",price:15000,emoji:"🥗",available:true},
+    {id:"p13",name:"Non",category:"Boshqa mahsulotlar",price:3000,emoji:"🍞",available:true},
+    {id:"p14",name:"Ketchup",category:"Boshqa mahsulotlar",price:5000,emoji:"🍅",available:true},
+  ];
+}
+function seedTables(){
+  return Array.from({length:6},(_,i)=>({ id:"t"+(i+1), name:"Stol "+(i+1), status:"bosh", order:null }));
+}
+function seedHistory(){
+  const now = Date.now(); const day = 86400000;
+  const mk = (items, offsetDays, tableName)=>{
+    const total = items.reduce((s,it)=>s+it.price*it.qty,0);
+    return { id: uid(), tableId:"demo", tableName, items, total, closedAt: new Date(now - offsetDays*day - Math.random()*5*3600000).toISOString() };
+  };
+  return [
+    mk([{productId:"p1",name:"Osh (Palov)",price:35000,qty:2},{productId:"p8",name:"Qora choy",price:10000,qty:3}], 0, "Stol 2"),
+    mk([{productId:"p3",name:"Shashlik (qo'y)",price:35000,qty:2},{productId:"p5",name:"Cola",price:12000,qty:2}], 1, "Stol 4"),
+    mk([{productId:"p2",name:"Lag'mon",price:30000,qty:1},{productId:"p9",name:"Ko'k choy",price:10000,qty:2}], 2, "Stol 1"),
+    mk([{productId:"p4",name:"Manti",price:28000,qty:3},{productId:"p11",name:"Achichuk salat",price:15000,qty:1}], 4, "Stol 6"),
+    mk([{productId:"p1",name:"Osh (Palov)",price:35000,qty:1},{productId:"p10",name:"Qaymoqli choy",price:15000,qty:2}], 6, "Stol 3"),
+    mk([{productId:"p3",name:"Shashlik (qo'y)",price:35000,qty:4},{productId:"p6",name:"Fanta",price:12000,qty:3},{productId:"p13",name:"Non",price:3000,qty:2}], 9, "Stol 5"),
+  ];
+}
+
+/* ============ UI CORE ============ */
+const UI = {
+  switchView(name){
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+name).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===name));
+    if(name==='kassa') Kassa.render();
+    if(name==='stats') Stats.render();
+    if(name==='history') History.render();
+    if(name==='products') Products.render();
+    if(name==='tables') Tables.render();
+  },
+  openOverlay(id){ document.getElementById(id).classList.add('show'); },
+  closeOverlay(id){ document.getElementById(id).classList.remove('show'); },
+  openSettings(){ this.openOverlay('overlaySettings'); }
+};
+
+/* ============ TABLES / STOLLAR VIEW ============ */
+const Tables = {
+  render(){
+    const grid = document.getElementById('tablesGrid');
+    grid.innerHTML = state.tables.map(t=>{
+      const total = t.order ? t.order.items.reduce((s,i)=>s+i.price*i.qty,0) : 0;
+      return `<div class="table-card ${t.status}" onclick="Order.open('${t.id}')">
+        <div>
+          <div class="table-status"><span class="status-dot ${t.status==='bosh'?'green':'red'}"></span>${t.status==='bosh'?"Bo'sh":"Faol"}</div>
+          <div class="tname" style="margin-top:8px;">${t.name}</div>
+        </div>
+        ${t.status==='faol' ? `<div class="table-total">${fmt(total)}</div>` : `<div class="table-empty-label">Zakaz berish →</div>`}
+      </div>`;
+    }).join('');
+  }
+};
+
+/* ============ ORDER / ZAKAZ FLOW ============ */
+const Order = {
+  open(tableId){
+    ui.orderTableId = tableId; ui.cart = {}; ui.currentCategory = CATEGORIES[0];
+    const t = state.tables.find(x=>x.id===tableId);
+    document.getElementById('orderSheetTitle').textContent = t.name + (t.status==='faol' ? " — Zakaz qo'shish" : " — Zakaz berish");
+    this.renderExisting();
+    this.renderCatTabs();
+    this.renderProducts();
+    this.renderCartBar();
+    UI.openOverlay('overlayOrder');
+  },
+  renderExisting(){
+    const t = state.tables.find(x=>x.id===ui.orderTableId);
+    const box = document.getElementById('existingOrderBox');
+    if(!t.order || !t.order.items.length){ box.innerHTML=""; return; }
+    const total = t.order.items.reduce((s,i)=>s+i.price*i.qty,0);
+    box.innerHTML = `<div class="card" style="border-color:var(--gold-dim);">
+      <div class="row" style="margin-bottom:8px;"><b style="color:var(--gold-bright);">Oldingi zakaz</b><span style="color:var(--text-dim); font-size:12px;">${fmt(total)}</span></div>
+      ${t.order.items.map(i=>`<div class="row" style="font-size:13px; padding:3px 0; color:var(--text-dim);"><span>${i.name} × ${i.qty}</span><span>${fmt(i.price*i.qty)}</span></div>`).join('')}
+    </div>`;
+  },
+  renderCatTabs(){
+    document.getElementById('catTabs').innerHTML = CATEGORIES.map(c=>
+      `<div class="cat-tab ${c===ui.currentCategory?'active':''}" onclick="Order.selectCat('${c}')">${c}</div>`
+    ).join('');
+  },
+  selectCat(c){ ui.currentCategory = c; this.renderCatTabs(); this.renderProducts(); },
+  renderProducts(){
+    const list = state.products.filter(p=>p.category===ui.currentCategory);
+    const box = document.getElementById('productList');
+    if(!list.length){ box.innerHTML = `<div class="empty-state"><div class="eicon">🍽</div>Bu toifada mahsulot yo'q</div>`; return; }
+    box.innerHTML = list.map(p=>{
+      const qty = ui.cart[p.id] || 0;
+      return `<div class="product-item ${!p.available?'unavailable':''}">
+        <div class="product-emoji">${p.emoji}</div>
+        <div class="product-info">
+          <div class="pname">${p.name}${!p.available?'<span class="tag-unavailable">Tugagan</span>':''}</div>
+          <div class="pprice">${fmt(p.price)}</div>
+        </div>
+        <div class="qty-control">
+          <button class="qty-btn" ${!p.available?'disabled':''} onclick="Order.changeQty('${p.id}',-1)">−</button>
+          <div class="qty-val">${qty}</div>
+          <button class="qty-btn" ${!p.available?'disabled':''} onclick="Order.changeQty('${p.id}',1)">+</button>
+        </div>
+      </div>`;
+    }).join('');
+  },
+  changeQty(pid, delta){
+    const cur = ui.cart[pid] || 0;
+    const next = Math.max(0, cur+delta);
+    if(next===0) delete ui.cart[pid]; else ui.cart[pid] = next;
+    this.renderProducts(); this.renderCartBar();
+  },
+  cartTotal(){
+    return Object.entries(ui.cart).reduce((s,[pid,qty])=>{
+      const p = state.products.find(x=>x.id===pid); return s + (p?p.price*qty:0);
+    },0);
+  },
+  renderCartBar(){
+    const bar = document.getElementById('cartBar');
+    const count = Object.values(ui.cart).reduce((a,b)=>a+b,0);
+    if(count===0){ bar.style.display='none'; return; }
+    bar.style.display='block';
+    document.getElementById('cartLabel').textContent = count + " ta mahsulot";
+    document.getElementById('cartAmount').textContent = fmt(this.cartTotal());
+    const t = state.tables.find(x=>x.id===ui.orderTableId);
+    document.getElementById('cartSendBtn').textContent = (t && t.status==='faol') ? "ZAKAZ QO'SHISH" : "ZAKAZNI YUBORISH";
+  },
+  async send(){
+    const t = state.tables.find(x=>x.id===ui.orderTableId);
+    if(!t) return;
+    const newItems = Object.entries(ui.cart).map(([pid,qty])=>{
+      const p = state.products.find(x=>x.id===pid);
+      return { productId:pid, name:p.name, price:p.price, qty };
+    });
+    if(!newItems.length) return;
+    if(!t.order) t.order = { items: [], startedAt: new Date().toISOString() };
+    newItems.forEach(ni=>{
+      const existing = t.order.items.find(i=>i.productId===ni.productId);
+      if(existing) existing.qty += ni.qty; else t.order.items.push(ni);
+    });
+    t.status = 'faol';
+    await saveTables();
+    ui.cart = {};
+    UI.closeOverlay('overlayOrder');
+    Tables.render();
+    toast(t.name+" uchun zakaz saqlandi");
+  }
+};
+
+/* ============ KASSA ============ */
+const Kassa = {
+  render(){
+    const box = document.getElementById('kassaList');
+    box.innerHTML = state.tables.map(t=>{
+      const total = t.order ? t.order.items.reduce((s,i)=>s+i.price*i.qty,0) : 0;
+      return `<div class="kassa-row" onclick="Kassa.openTable('${t.id}')">
+        <div class="kassa-left"><span class="status-dot ${t.status==='bosh'?'green':'red'}"></span><span class="kassa-name">${t.name}</span></div>
+        ${t.status==='faol' ? `<span class="kassa-amt">${fmt(total)}</span>` : `<span class="kassa-amt dim">Bo'sh</span>`}
+      </div>`;
+    }).join('');
+  },
+  openTable(tableId){
+    const t = state.tables.find(x=>x.id===tableId);
+    if(!t.order || !t.order.items.length){ toast(t.name+" bo'sh"); return; }
+    const total = t.order.items.reduce((s,i)=>s+i.price*i.qty,0);
+    document.getElementById('receiptTitle').textContent = t.name;
+    document.getElementById('receiptBody').innerHTML = Receipt.render(t.name, t.order.items, total, new Date());
+    document.getElementById('receiptActions').innerHTML = `
+      <button class="btn btn-outline btn-block" onclick="Kassa.showShot('${tableId}')">🧾 Shotni ko'rish</button>
+      <button class="btn btn-gold btn-block" onclick="Kassa.askPayment('${tableId}')">💵 PUL OLINDI</button>
+    `;
+    UI.openOverlay('overlayReceipt');
+  },
+  showShot(tableId){
+    const t = state.tables.find(x=>x.id===tableId);
+    const total = t.order.items.reduce((s,i)=>s+i.price*i.qty,0);
+    document.getElementById('receiptTitle').textContent = "Shot";
+    document.getElementById('receiptBody').innerHTML = Receipt.render(t.name, t.order.items, total, new Date());
+    document.getElementById('receiptActions').innerHTML = `
+      <button class="btn btn-outline btn-block" onclick="window.print()">🖨 Chop etish</button>
+      <button class="btn btn-gold btn-block" onclick="Kassa.askPayment('${tableId}')">💵 PUL OLINDI</button>
+    `;
+  },
+  askPayment(tableId){
+    const t = state.tables.find(x=>x.id===tableId);
+    const total = t.order.items.reduce((s,i)=>s+i.price*i.qty,0);
+    document.getElementById('confirmText').textContent = `${t.name}: ${fmt(total)} pul olindi. Tasdiqlaysizmi?`;
+    document.getElementById('confirmYesBtn').onclick = ()=>Kassa.confirmPayment(tableId);
+    UI.openOverlay('overlayConfirm');
+  },
+  async confirmPayment(tableId){
+    const t = state.tables.find(x=>x.id===tableId);
+    const total = t.order.items.reduce((s,i)=>s+i.price*i.qty,0);
+    state.history.unshift({
+      id: uid(), tableId: t.id, tableName: t.name,
+      items: t.order.items.map(i=>({...i})), total,
+      closedAt: new Date().toISOString()
+    });
+    t.status = 'bosh'; t.order = null;
+    await saveHistory(); await saveTables();
+    UI.closeOverlay('overlayConfirm'); UI.closeOverlay('overlayReceipt');
+    Kassa.render(); Tables.render();
+    toast(t.name+" hisobi yopildi");
+  }
+};
+
+const Receipt = {
+  render(tableName, items, total, dateObj){
+    return `<div class="receipt">
+      <div class="receipt-head">
+        <div class="rlogo">☕ Cafechoyuz</div>
+        <div class="rmeta">${tableName} · ${dateStr(dateObj)} ${timeStr(dateObj)}</div>
+      </div>
+      ${items.map(i=>`<div class="receipt-line"><span class="rname">${i.name} <span class="rsub">× ${i.qty}</span></span><span>${fmt(i.price*i.qty)}</span></div>`).join('')}
+      <div class="receipt-total"><span>Jami</span><span>${fmt(total)}</span></div>
+    </div>`;
+  }
+};
+
+/* ============ TARIX ============ */
+const History = {
+  render(){
+    const box = document.getElementById('historyList');
+    if(!state.history.length){ box.innerHTML = `<div class="empty-state"><div class="eicon">📜</div>Hozircha tarix bo'sh</div>`; return; }
+    const sorted = [...state.history].sort((a,b)=> new Date(b.closedAt)-new Date(a.closedAt));
+    let lastDate = null; let html = '';
+    sorted.forEach(h=>{
+      const d = dateStr(h.closedAt);
+      if(d!==lastDate){ html += `<div class="section-title" style="margin-top:14px;">${d}</div>`; lastDate = d; }
+      html += `<div class="card" style="margin-bottom:8px; cursor:pointer;" onclick="History.openDetail('${h.id}')">
+        <div class="row">
+          <div><b>${h.tableName}</b><div style="font-size:11.5px; color:var(--text-faint); margin-top:2px;">${timeStr(h.closedAt)}</div></div>
+          <div style="text-align:right;"><div style="color:var(--gold-bright); font-weight:800;">${fmt(h.total)}</div><div style="font-size:11px; color:var(--green);">To'langan</div></div>
+        </div>
+      </div>`;
+    });
+    box.innerHTML = html;
+  },
+  openDetail(id){
+    const h = state.history.find(x=>x.id===id);
+    document.getElementById('receiptTitle').textContent = "Tarix — "+h.tableName;
+    document.getElementById('receiptBody').innerHTML = Receipt.render(h.tableName, h.items, h.total, h.closedAt);
+    document.getElementById('receiptActions').innerHTML = `<button class="btn btn-outline btn-block" onclick="window.print()">🖨 Chop etish</button>`;
+    UI.openOverlay('overlayReceipt');
+  }
+};
+
+/* ============ STATISTIKA ============ */
+const Stats = {
+  periods: [ ["today","Bugun"], ["week","Hafta"], ["month","Oy"], ["year","Yil"], ["range","Sana oralig'i"] ],
+  render(){
+    document.getElementById('statTabs').innerHTML = this.periods.map(([k,l])=>
+      `<div class="stat-tab ${ui.statPeriod===k?'active':''}" onclick="Stats.selectPeriod('${k}')">${l}</div>`
+    ).join('');
+    document.getElementById('dateRangeBox').style.display = ui.statPeriod==='range' ? 'block' : 'none';
+    this.compute();
+  },
+  selectPeriod(k){ ui.statPeriod = k; this.render(); },
+  applyRange(){ this.compute(); },
+  getRange(){
+    const now = new Date();
+    if(ui.statPeriod==='today') return [new Date(now.getFullYear(),now.getMonth(),now.getDate()), now];
+    if(ui.statPeriod==='week') return [startOfWeek(now), now];
+    if(ui.statPeriod==='month') return [startOfMonth(now), now];
+    if(ui.statPeriod==='year') return [startOfYear(now), now];
+    if(ui.statPeriod==='range'){
+      const from = document.getElementById('rangeFrom').value;
+      const to = document.getElementById('rangeTo').value;
+      const f = from ? new Date(from+"T00:00:00") : new Date(0);
+      const t = to ? new Date(to+"T23:59:59") : now;
+      return [f,t];
+    }
+    return [new Date(0), now];
+  },
+  compute(){
+    const [from,to] = this.getRange();
+    const filtered = state.history.filter(h=>{ const d=new Date(h.closedAt); return d>=from && d<=to; });
+    const revenue = filtered.reduce((s,h)=>s+h.total,0);
+    const orders = filtered.length;
+    const avg = orders ? revenue/orders : 0;
+    document.getElementById('statGrid').innerHTML = `
+      <div class="stat-card"><div class="slabel">Tushum</div><div class="sval">${fmt(revenue)}</div></div>
+      <div class="stat-card"><div class="slabel">Yopilgan hisoblar</div><div class="sval">${orders} ta</div></div>
+      <div class="stat-card"><div class="slabel">O'rtacha chek</div><div class="sval">${fmt(avg)}</div></div>
+      <div class="stat-card"><div class="slabel">Stollar aylanmasi</div><div class="sval">${orders} ta</div></div>
+    `;
+    // chart
+    const chartWrap = document.getElementById('statChartWrap');
+    if(ui.statPeriod==='week'){
+      const days = ["Dush","Sesh","Chor","Pay","Jum","Shan","Yak"];
+      const start = startOfWeek(new Date());
+      const totals = new Array(7).fill(0);
+      filtered.forEach(h=>{ const d=new Date(h.closedAt); const idx = Math.floor((d-start)/86400000); if(idx>=0&&idx<7) totals[idx]+=h.total; });
+      const max = Math.max(...totals,1);
+      chartWrap.innerHTML = `<div class="section-title">Kunlar bo'yicha tushum</div><div class="card"><div class="bar-chart">${
+        totals.map((v,i)=>`<div class="bar-col"><div class="bar-fill" style="height:${Math.max(4,(v/max)*100)}%"></div><div class="bar-label">${days[i]}</div></div>`).join('')
+      }</div></div>`;
+    } else if(ui.statPeriod==='year'){
+      const months = ["Yan","Fev","Mar","Apr","May","Iyun","Iyul","Avg","Sen","Okt","Noy","Dek"];
+      const year = new Date().getFullYear();
+      const totals = new Array(12).fill(0);
+      state.history.forEach(h=>{ const d=new Date(h.closedAt); if(d.getFullYear()===year) totals[d.getMonth()]+=h.total; });
+      const max = Math.max(...totals,1);
+      chartWrap.innerHTML = `<div class="section-title">Oylar bo'yicha tushum</div><div class="card"><div class="bar-chart">${
+        totals.map((v,i)=>`<div class="bar-col"><div class="bar-fill" style="height:${Math.max(4,(v/max)*100)}%"></div><div class="bar-label">${months[i]}</div></div>`).join('')
+      }</div></div>`;
+    } else {
+      chartWrap.innerHTML = '';
+    }
+    // top products
+    const agg = {};
+    filtered.forEach(h=>h.items.forEach(i=>{
+      if(!agg[i.name]) agg[i.name] = {qty:0, revenue:0};
+      agg[i.name].qty += i.qty; agg[i.name].revenue += i.qty*i.price;
+    }));
+    const rows = Object.entries(agg).sort((a,b)=>b[1].qty-a[1].qty);
+    const box = document.getElementById('topProducts');
+    if(!rows.length){ box.innerHTML = `<div class="empty-state" style="padding:20px;"><div class="eicon">📦</div>Bu davrda sotuv yo'q</div>`; return; }
+    box.innerHTML = rows.map(([name,v])=>`<div class="top-prod-row"><span>${name}</span><span style="text-align:right; color:var(--text-dim); font-size:12.5px;">${v.qty} dona<br><b style="color:var(--gold-bright);">${fmt(v.revenue)}</b></span></div>`).join('');
+  }
+};
+
+/* ============ MAHSULOTLAR ============ */
+const Products = {
+  render(){
+    const box = document.getElementById('productsAdminList');
+    box.innerHTML = CATEGORIES.map(cat=>{
+      const items = state.products.filter(p=>p.category===cat);
+      if(!items.length) return '';
+      return `<div class="section-title">${cat}</div>` + items.map(p=>`
+        <div class="product-item" onclick="Products.openForm('${p.id}')">
+          <div class="product-emoji">${p.emoji}</div>
+          <div class="product-info">
+            <div class="pname">${p.name}${!p.available?'<span class="tag-unavailable">Tugagan</span>':''}</div>
+            <div class="pprice">${fmt(p.price)}</div>
+          </div>
+          <div style="color:var(--text-faint); font-size:18px;">›</div>
+        </div>`).join('');
+    }).join('');
+  },
+  openForm(id){
+    ui.editingProductId = id || null;
+    const catSel = document.getElementById('pfCategory');
+    catSel.innerHTML = CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join('');
+    const pick = document.getElementById('pfEmojiPick');
+    pick.innerHTML = EMOJI_CHOICES.map(e=>`<div class="emoji-opt" data-emoji="${e}" onclick="Products.pickEmoji('${e}')">${e}</div>`).join('');
+    if(id){
+      const p = state.products.find(x=>x.id===id);
+      document.getElementById('pfTitle').textContent = "Mahsulotni tahrirlash";
+      document.getElementById('pfName').value = p.name;
+      document.getElementById('pfPrice').value = p.price;
+      catSel.value = p.category;
+      document.getElementById('pfAvailable').checked = p.available;
+      this.pickEmoji(p.emoji);
+      document.getElementById('pfDeleteBtn').style.display = 'block';
+    } else {
+      document.getElementById('pfTitle').textContent = "Mahsulot qo'shish";
+      document.getElementById('pfName').value = '';
+      document.getElementById('pfPrice').value = '';
+      document.getElementById('pfAvailable').checked = true;
+      this.pickEmoji(EMOJI_CHOICES[0]);
+      document.getElementById('pfDeleteBtn').style.display = 'none';
+    }
+    UI.openOverlay('overlayProductForm');
+  },
+  pickEmoji(e){
+    ui.selectedEmoji = e;
+    document.querySelectorAll('.emoji-opt').forEach(el=>el.classList.toggle('sel', el.dataset.emoji===e));
+  },
+  async save(){
+    const name = document.getElementById('pfName').value.trim();
+    const price = parseInt(document.getElementById('pfPrice').value,10);
+    const category = document.getElementById('pfCategory').value;
+    const available = document.getElementById('pfAvailable').checked;
+    const emoji = ui.selectedEmoji || EMOJI_CHOICES[0];
+    if(!name || !price || price<=0){ toast("Nomi va narxini to'g'ri kiriting"); return; }
+    if(ui.editingProductId){
+      const p = state.products.find(x=>x.id===ui.editingProductId);
+      Object.assign(p, {name, price, category, available, emoji});
+      toast("Mahsulot yangilandi");
+    } else {
+      state.products.push({ id: uid(), name, price, category, available, emoji });
+      toast("Mahsulot qo'shildi");
+    }
+    await saveProducts();
+    UI.closeOverlay('overlayProductForm');
+    this.render();
+  },
+  async remove(){
+    if(!ui.editingProductId) return;
+    state.products = state.products.filter(x=>x.id!==ui.editingProductId);
+    await saveProducts();
+    UI.closeOverlay('overlayProductForm');
+    this.render();
+    toast("Mahsulot o'chirildi");
+  }
+};
+
+/* ============ SETTINGS ============ */
+const Settings = {
+  async resetAll(){
+    if(!confirm("Barcha ma'lumotlar (stollar, tarix, mahsulotlar) tozalanadi. Davom etasizmi?")) return;
+    state.products = seedProducts(); state.tables = seedTables(); state.history = seedHistory();
+    await saveProducts(); await saveTables(); await saveHistory();
+    UI.closeOverlay('overlaySettings');
+    Tables.render(); Kassa.render(); Stats.render(); History.render(); Products.render();
+    toast("Ma'lumotlar tiklandi");
+  }
+};
+
+/* ============ INIT ============ */
+(async function init(){
+  try{ if(window.Telegram && window.Telegram.WebApp){ window.Telegram.WebApp.ready(); window.Telegram.WebApp.expand(); } }catch(e){}
+  await loadAll();
+  Tables.render();
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('rangeFrom').value = today;
+  document.getElementById('rangeTo').value = today;
+})();
+</script>
+</body>
+</html>
